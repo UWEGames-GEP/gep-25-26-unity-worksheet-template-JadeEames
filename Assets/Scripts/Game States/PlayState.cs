@@ -1,28 +1,33 @@
 using UnityEngine;
 
-namespace GameFSM
+namespace Game_States
 {
-    public class PauseState : GameState
+    public class PlayState : GameState
     {
-        public new System.Func<GameState> ConstructorFunc = () => new PauseState();
+        public new System.Func<GameState> ConstructorFunc = () => new PlayState();
 
         public override void Initialise()
         {
-
+            
         }
 
         public override void OnEnter()
         {
-            Time.timeScale = 0;
+            
         }
 
         public override void OnExit()
         {
-            Time.timeScale = 1;
+            
         }
 
         public override void Tick()
         {
+            if (Input.GetKeyDown(KeyCode.Return))
+            {
+                 
+            }
+
             
         }
     }

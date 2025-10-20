@@ -228,7 +228,7 @@
                 {
                     "name": "Pause",
                     "type": "Button",
-                    "id": "12e4b0dd-93d0-46c1-9d1a-8178ac4520e9",
+                    "id": "d26b4a47-91a9-486b-aa50-97c35c6d0a29",
                     "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
@@ -238,11 +238,11 @@
             "bindings": [
                 {
                     "name": "",
-                    "id": "68a2b29c-1832-46b0-9e92-f551e8f36052",
+                    "id": "4b83b3d0-f2b8-44d7-a0b5-229d2c670e50",
                     "path": "<Keyboard>/enter",
                     "interactions": "",
                     "processors": "",
-                    "groups": ";KeyboardMouse",
+                    "groups": "",
                     "action": "Pause",
                     "isComposite": false,
                     "isPartOfComposite": false

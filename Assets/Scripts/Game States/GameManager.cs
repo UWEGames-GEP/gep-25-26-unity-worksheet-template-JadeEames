@@ -1,7 +1,8 @@
-using UnityEngine;
+using System;
 using System.Collections.Generic;
+using UnityEngine;
 
-namespace GameFSM
+namespace Game_States
 {
     public struct TransitionDetails
     {
@@ -24,6 +25,7 @@ namespace GameFSM
 
         // Enum variable storing the current state of the game. 
         private STATE current_state;
+        private STATE previous_state;
         private TransitionDetails transition_info;
 
 
@@ -42,6 +44,7 @@ namespace GameFSM
             }
 
             current_state = STATE.GAME_PLAY;
+            previous_state = STATE.GAME_PLAY;
             transition_info = new TransitionDetails(false, current_state, false);
             game_states[current_state].Initialise();
         }
@@ -49,30 +52,56 @@ namespace GameFSM
         
         void Update()
         {
-            // /REMOVE 
-            if (Input.GetKeyDown(KeyCode.P)) SetState( STATE.PAUSE);
-            if (Input.GetKeyDown(KeyCode.Escape)) SetState(STATE.GAME_PLAY);
-
             game_states[current_state].Tick();
         }
 
         private void LateUpdate()
         {
+            ExecuteStateChange();
+        }
+
+        private void ExecuteStateChange()
+        {
             if (transition_info.Transition)
             {
                 // Exit current state & clear if specified.
                 game_states[current_state].OnExit();
-                if (transition_info.ClearPreviousState) { game_states[current_state] = game_states[current_state].ConstructorFunc(); }
+                if (transition_info.ClearPreviousState)
+                {
+                    game_states[current_state] = game_states[current_state].ConstructorFunc();
+                }
 
                 // Enter new state. 
+                previous_state = current_state;
                 current_state = transition_info.NextState;
                 game_states[current_state].OnEnter();
+                transition_info.Transition = false;
             }
         }
 
-        public void SetState(STATE _new_state, bool _clear = false)
+        public void SetState(GameStateEvent transitionEvent)
         {
-            transition_info = new TransitionDetails(true, _new_state, _clear);
+            if (transitionEvent.transitioning) {transition_info = new TransitionDetails(true, transitionEvent.nextState, transitionEvent.clearPreviousState);}
+        }
+        public void SetState(TransitionDetails transitionDetails)
+        {
+            if (transitionDetails.Transition) { transition_info = transitionDetails; }
+        }
+
+        public void togglePause(PauseInputEvent pauseInputEvent)
+        {
+            switch (current_state)
+            {
+                case STATE.GAME_PLAY:
+                    SetState(new TransitionDetails(true, STATE.PAUSE, false));
+                    break;
+                case STATE.PAUSE:
+                    transition_info = new TransitionDetails(true, previous_state, false);
+                    ExecuteStateChange();
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
         }
     }
 }

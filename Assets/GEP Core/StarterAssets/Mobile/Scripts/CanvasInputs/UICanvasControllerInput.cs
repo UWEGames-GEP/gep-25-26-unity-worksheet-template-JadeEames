@@ -1,6 +1,7 @@
+using GEP_Core.StarterAssets.InputSystem;
 using UnityEngine;
 
-namespace StarterAssets
+namespace GEP_Core.StarterAssets.Mobile.Scripts.CanvasInputs
 {
     public class UICanvasControllerInput : MonoBehaviour
     {
