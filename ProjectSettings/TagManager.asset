@@ -6,11 +6,12 @@ TagManager:
   tags:
   - CinemachineTarget
   - GeneratedEventsDirectory
+  - CanPickUp
   layers:
   - Default
   - TransparentFX
   - Ignore Raycast
-  - 
+  - PickUp
   - Water
   - UI
   - 
