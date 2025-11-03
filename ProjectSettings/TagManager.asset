@@ -6,7 +6,8 @@ TagManager:
   tags:
   - CinemachineTarget
   - GeneratedEventsDirectory
-  - CanPickUp
+  - ItemMagnatiseRadius
+  - ItemMagnatiseTarget
   layers:
   - Default
   - TransparentFX
@@ -14,7 +15,7 @@ TagManager:
   - PickUp
   - Water
   - UI
-  - 
+  - ItemDrop
   - 
   - 
   - 

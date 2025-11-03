@@ -11,9 +11,19 @@ namespace InventorySystem
 {
     public class Inventory : MonoBehaviour
     {
-        [SerializeField] private List<ItemStack> slots = new ();
-        private int maxInventorySize = 4;
+        [SerializeField] private List<ItemStack> slots = new();
+        [SerializeField] private GameObject base_item_object = null;
+        [SerializeField] private int maxInventorySize = 4;
+        [SerializeField] private Vector3 dropped_item_pos_offset = new Vector3(0,1,1);
 
+
+        private void Update()
+        {
+            if (Input.GetKeyDown(KeyCode.E))
+            {
+                DropItems();
+            }
+        }
 
         public bool CanPickupItem(InventoryItem itemType)
         {
@@ -145,14 +155,21 @@ namespace InventorySystem
             }
         }
 
-        public void SortInventory()
-        {
-
-        }
-
         public void DropItems()
         {
+            foreach (var stack in slots)
+            {
+                for (int i = stack.count; i > 0; --i)
+                {
+                    Vector3 position = transform.TransformPoint(dropped_item_pos_offset);
+                    var BaseObject = Instantiate(base_item_object, position, Quaternion.identity);
+                    var itemObject = Instantiate(stack.type.obj_prefab, position, Quaternion.identity, BaseObject.transform);
 
+                    BaseObject.GetComponent<ItemObject>().setItemType(stack.type);
+                }
+            }
+
+            slots.Clear();
         }
     }
 }

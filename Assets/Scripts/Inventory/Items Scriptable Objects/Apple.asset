@@ -17,6 +17,6 @@ MonoBehaviour:
   description: 'An edible fruit that grows on trees. '
   categories: 02000000
   weight: 1
-  obj_prefab: {fileID: 0}
+  obj_prefab: {fileID: 3690045663073891074, guid: 219fd25eaea36da4591b516b8e8b8be0, type: 3}
   icon: {fileID: 0}
   stackLimit: 2

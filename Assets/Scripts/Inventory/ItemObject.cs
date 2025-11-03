@@ -14,12 +14,21 @@ namespace InventorySystem
         private bool pick_up_target_inrange = false;
         private Inventory pick_up_target_ref = null;
         private Transform target_transform = null;
+
         [SerializeField] private float pull_force = 10f;
+        [SerializeField] private float magnatise_delay = 2f;
+        private float delay_timer = 0;
         
         public void setItemType(InventoryItem item)
         {
             this.item = item;
-            rb.mass = item.weight;
+
+            if (rb == null)
+            {
+                rb = GetComponent<Rigidbody>();
+            }
+
+            rb.mass = this.item.weight;
         }
 
         private void Start()
@@ -35,7 +44,12 @@ namespace InventorySystem
         {
             if (pick_up_target_inrange)
             {
-                MagnatiseTowardsTarget();
+                delay_timer -= Time.deltaTime;
+
+                if (delay_timer <= 0)
+                {
+                    MagnatiseTowardsTarget();
+                }
             }
         }
 
@@ -52,30 +66,29 @@ namespace InventorySystem
 
         private void OnTriggerEnter(Collider collider)
         {
-            if (collider.CompareTag("CanPickUp"))
+            if (collider.CompareTag("ItemMagnatiseRadius"))
             {
                 pick_up_target_ref = collider.GetComponentInParent<Inventory>();
                 if (pick_up_target_ref.CanPickupItem(item))
                 {
                     pick_up_target_inrange = true;
                     target_transform = collider.transform;
+                    delay_timer = magnatise_delay;
                 }
+            }
+
+            if (collider.CompareTag("ItemMagnatiseTarget") && pick_up_target_ref.CanPickupItem(item))
+            {
+                pick_up_target_ref.AddItems(item);
+                Destroy(gameObject);
             }
         }
         private void OnTriggerExit(Collider collider)
         {
-            if (collider.CompareTag("CanPickUp"))
+            if (collider.CompareTag("ItemMagnatiseRadius"))
             {
                 pick_up_target_inrange = false;
-            }
-        }
-
-        private void OnCollisionEnter(Collision collision)
-        {
-            if (collision.collider.CompareTag("Player"))
-            {
-                pick_up_target_ref.AddItems(item);
-                Destroy(gameObject);
+                delay_timer = 0;
             }
         }
     }

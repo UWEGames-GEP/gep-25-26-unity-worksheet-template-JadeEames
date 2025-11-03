@@ -17,6 +17,6 @@ MonoBehaviour:
   description: 'Building object. '
   categories: 03000000
   weight: 10
-  obj_prefab: {fileID: 0}
+  obj_prefab: {fileID: 48815309100264047, guid: 4f14c25b3402a7f4eb48de9fd5515e6f, type: 3}
   icon: {fileID: 0}
   stackLimit: 10
