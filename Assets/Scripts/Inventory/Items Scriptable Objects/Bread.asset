@@ -18,5 +18,5 @@ MonoBehaviour:
   categories: 02000000
   weight: 6
   obj_prefab: {fileID: 6573431029254404477, guid: 70eb6a43e6f7639418ccef287a1e59df, type: 3}
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: c8546d02ef219f04aac458f63dd5130a, type: 3}
   stackLimit: 10
