@@ -61,19 +61,27 @@ namespace InventorySystem
 
             if (numToRemove > count)
             {
-                Debug.LogWarning("Cannot remove " + numToRemove + " from " + "an ItemStack of count " + count);
+                //Debug.LogWarning("Cannot remove " + numToRemove + " from " + "an ItemStack of count " + count);
+
+                int remainingRemovals = numToRemove - count;
+
                 count = 0;
-                return numToRemove - count;
+                return remainingRemovals;
             }
 
             count -= numToRemove;
-            return numToRemove - count;
+            return 0;
         }
 
         public void wipe(bool wipeType = true, bool wipeCount = true)
         {
             if (wipeType) type = null;
             if (wipeCount) count = 0;
+        }
+
+        public void SetType(InventoryItem type)
+        {
+            this.type = type;
         }
     }
 }

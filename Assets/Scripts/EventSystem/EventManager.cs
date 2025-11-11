@@ -12,7 +12,7 @@ public static class EventManager
     /// <summary>
     /// <c>Register</c> adds a method pointer to an event types registered methods. 
     /// </summary>
-    /// <typeparam name="T"></typeparam>
+    /// <typeparam name="T">Struct payload</typeparam>
     /// <param name="callback"></param>
     public static void Register<T>(Action<T> callback)
     {
