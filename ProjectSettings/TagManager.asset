@@ -6,14 +6,16 @@ TagManager:
   tags:
   - CinemachineTarget
   - GeneratedEventsDirectory
+  - ItemMagnatiseRadius
+  - ItemMagnatiseTarget
   layers:
   - Default
   - TransparentFX
   - Ignore Raycast
-  - 
+  - PickUp
   - Water
   - UI
-  - 
+  - ItemDrop
   - 
   - 
   - 

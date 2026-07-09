@@ -1,3 +1,4 @@
+using Unity.VisualScripting.InputSystem;
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -10,3 +11,4 @@ public class EventListener<T, TU> : EventListenerBase where TU : UnityEvent<T>, 
 
     private void OnEvent(T payload) => response?.Invoke(payload);
 }
+
