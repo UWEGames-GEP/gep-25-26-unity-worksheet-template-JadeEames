@@ -8,7 +8,7 @@ namespace InventorySystem
     [RequireComponent(typeof(Rigidbody))]
     public class ItemObject : MonoBehaviour
     {
-        [SerializeField] private InventoryItem item;
+        [SerializeField] private int item_id;
         public int count = 1;
         private Rigidbody rb;
 
@@ -22,25 +22,22 @@ namespace InventorySystem
         [SerializeField] private float magnatise_delay = 2f;
         private float delay_timer = 0;
         
-        public void setItemType(InventoryItem type)
+        public void SetItem(ItemMetaData item_data, int count)
         {
-            item = type;
+            item_id = item_data.id;
+            this.count = count;
 
             if (rb == null)
             {
                 rb = GetComponent<Rigidbody>();
             }
 
-            rb.mass = item.weight;
+            rb.mass = item_data.weight;
         }
 
         private void Start()
         {
             rb = GetComponent<Rigidbody>();
-            if (item != null)
-            {
-                rb.mass = item.weight;
-            }
         }
 
         private void FixedUpdate()
@@ -75,7 +72,7 @@ namespace InventorySystem
             if (collider.CompareTag("ItemMagnatiseRadius"))
             {
                 pick_up_target_ref = collider.GetComponentInParent<Inventory>();
-                if (pick_up_target_ref.CanPickupItem(item))
+                if (pick_up_target_ref.CanPickupItem(item_id))
                 {
                     pick_up_target_inrange = true;
                     target_transform = collider.transform;
@@ -83,9 +80,9 @@ namespace InventorySystem
                 }
             }
 
-            if (collider.CompareTag("ItemMagnatiseTarget") && pick_up_target_ref.CanPickupItem(item))
+            if (collider.CompareTag("ItemMagnatiseTarget") && pick_up_target_ref.CanPickupItem(item_id))
             {
-                int added = pick_up_target_ref.AddItems(item, count);
+                int added = pick_up_target_ref.AddItems(item_id, count);
                 count -= added;
 
                 if (count <= 0)

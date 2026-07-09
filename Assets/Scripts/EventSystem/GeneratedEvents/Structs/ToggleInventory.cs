@@ -5,5 +5,6 @@ using UnityEngine;
 [System.Serializable]
 public struct ToggleInventory
 {
-    public bool enable;
+    public InventorySystem.Inventory primaryInventory;
+    public InventorySystem.Inventory secondaryInventory;
 }

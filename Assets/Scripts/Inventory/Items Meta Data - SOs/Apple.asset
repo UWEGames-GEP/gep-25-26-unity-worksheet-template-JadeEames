@@ -9,14 +9,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f733a46ccf5c8d2438be78bae97ff06d, type: 3}
+  m_Script: {fileID: 11500000, guid: 5615d710064996f468e6fc4cc0bc7aec, type: 3}
   m_Name: Apple
   m_EditorClassIdentifier: 
   id: 1
   displayName: Apple
-  description: 'An edible fruit that grows on trees. '
-  categories: 02000000
-  weight: 1
-  obj_prefab: {fileID: 3690045663073891074, guid: 219fd25eaea36da4591b516b8e8b8be0, type: 3}
+  description: An edible fruit.
+  categories: 
+  weight: 0.2
+  objPrefab: {fileID: 3690045663073891074, guid: 219fd25eaea36da4591b516b8e8b8be0, type: 3}
   icon: {fileID: 21300000, guid: a1436813674f0104a800dbc417659885, type: 3}
-  stackLimit: 2
+  stackLimit: 10

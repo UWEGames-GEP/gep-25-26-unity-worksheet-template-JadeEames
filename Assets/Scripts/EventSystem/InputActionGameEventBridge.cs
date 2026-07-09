@@ -6,10 +6,13 @@ public class InputActionGameEventMediator : MonoBehaviour
 {
     public InputActionReference pauseAction;
     public InputActionReference toggleInputAction;
+    private InventorySystem.Inventory playerInventory;
 
 
     private void OnEnable()
     {
+        if (playerInventory == null) { playerInventory = GameObject.FindGameObjectWithTag("Player").GetComponent<InventorySystem.Inventory>();  }
+
         if (pauseAction != null)
         {
             pauseAction.action.Enable();
@@ -19,7 +22,7 @@ public class InputActionGameEventMediator : MonoBehaviour
         if (toggleInputAction != null)
         {
             toggleInputAction.action.Enable();
-            toggleInputAction.action.started += context => EventManager.Raise(new ToggleInventory { enable = true });
+            toggleInputAction.action.started += context => EventManager.Raise(new ToggleInventory { primaryInventory = playerInventory });
         }
     }
 
@@ -33,7 +36,7 @@ public class InputActionGameEventMediator : MonoBehaviour
         if (toggleInputAction != null)
         {
             toggleInputAction.action.Enable();
-            toggleInputAction.action.started -= _ => EventManager.Raise(new ToggleInventory { enable = true });
+            toggleInputAction.action.started -= _ => EventManager.Raise(new ToggleInventory { primaryInventory = playerInventory });
         }
     }
 }

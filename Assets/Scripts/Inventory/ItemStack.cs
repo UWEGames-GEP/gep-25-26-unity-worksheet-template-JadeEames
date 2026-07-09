@@ -1,87 +1,70 @@
-using Unity.Mathematics;
 using UnityEngine;
+using static UnityEditor.Progress;
 
 namespace InventorySystem
 {
+    [Tooltip("Represents a stack of items - stores item_id and count")]
+    [System.Serializable]
     public class ItemStack
     {
-        public InventoryItem type { get; private set; } = null;
-        public int count { get; private set; } = 0;
+        public int item_id;
+        public int count;
+
+
+        public static ItemStack Empty => new ItemStack { item_id = 0, count = 0 };
+
+        public bool IsEmpty => item_id == 0 || count <= 0;
+    }
+}
+
+        
+        /*public bool IsFull => count >= type.stackLimit;
+
+        
+        public ItemMetaData type { get; private set; } = null;
 
         /// <summary>
         /// Instantiate ItemStack of given InventoryItemType.
-        /// Item count is initialised to 1.
         /// </summary>
-        /// <param name="itemType"></param>
-        public ItemStack(InventoryItem itemType)
+        /// <param name="type">Inventory Item scriptable object detailing type of stack.</param>
+        /// <param name="count">Number of items in stack.</param>
+        public ItemStack(ItemMetaData type, int count = 1)
         {
-            type = itemType;
-            count = 1;
+            this.type = type;
+            this.count = count;
         }
 
         /// <summary>
         /// Add x items to the item stack.
         /// </summary>
-        /// <param name="numToAdd"></param>
-        /// <returns>Rejected items.</returns>
-        public int AddItems(int numToAdd)
+        /// <param name="amount">The number of items to ATTEMPT add to stack.</param>
+        /// <returns>Returns the number of REJECTED items.</returns>
+        public int Add(int amount)
         {
-            if (type == null)
-            {
-                Debug.LogWarning("Cannot add to an ItemStack of item type null");
-                return numToAdd;
-            }
+            if (amount <= 0) return amount;
 
-            int total = count + numToAdd;
+            int availableSpace = type.stackLimit - count;
+            int toAdd = Mathf.Min(availableSpace, amount);
 
-            if (total > type.stackLimit)
-            {
-                int remaining = total - type.stackLimit;
-                count = type.stackLimit;
-                return remaining;
-            }
-
-            count = total;
-
-            return 0;
+            count += toAdd;
+            return amount - toAdd;
         }
 
         /// <summary>
         /// Remove x items from the item stack.
         /// </summary>
-        /// <param name="numToRemove"></param>
-        /// <returns>Rejected removals.</returns>
-        public int RemoveItems(int numToRemove)
+        /// <param name="amount">The number to ATTEMPT to remove from stack</param>
+        /// <returns>Returns the number of REJECTED removals.</returns>
+        public int Remove(int amount)
         {
-            if (type == null)
-            {
-                Debug.LogWarning("Cannot remove from an ItemStack of item type null");
-                return numToRemove;
-            }
+            if (amount <= 0) return amount;
 
-            if (numToRemove > count)
-            {
-                //Debug.LogWarning("Cannot remove " + numToRemove + " from " + "an ItemStack of count " + count);
+            int toRemove = Mathf.Min(count, amount);
+            count -= toRemove;
 
-                int remainingRemovals = numToRemove - count;
-
-                count = 0;
-                return remainingRemovals;
-            }
-
-            count -= numToRemove;
-            return 0;
+            return amount - toRemove;
         }
-
-        public void wipe(bool wipeType = true, bool wipeCount = true)
-        {
-            if (wipeType) type = null;
-            if (wipeCount) count = 0;
-        }
-
-        public void SetType(InventoryItem type)
-        {
-            this.type = type;
-        }
+        
     }
 }
+        */
