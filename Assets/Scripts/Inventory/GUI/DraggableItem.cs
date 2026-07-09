@@ -5,14 +5,14 @@ namespace InventorySystem
 {
     public class DraggableItem : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
     {
-        public GUI_Slot sourceSlot;
+        public GUI_Slot sourceSlot { get; private set; }
         
         private Transform originalParent;
         private RectTransform rectTransform;
         private CanvasGroup draggableCanvasGroup;
 
-        public Inventory inventory { get; private set; }
         private bool droppedOnSlot = false;
+
 
         public void Awake()
         {
@@ -25,10 +25,14 @@ namespace InventorySystem
         {
             sourceSlot = GetComponentInParent<GUI_Slot>();
 
+            if (sourceSlot == null) return;
+
+            droppedOnSlot = false;
+
             // Make transparent.
             draggableCanvasGroup.alpha = 0.6f;
 
-            // Set originalParent & set parent to root parent - so renders above all UI.
+            // Set originalParent & set parent to root parent - so renders above all other GUI elements.
             originalParent = transform.parent;
             transform.SetParent(transform.root);
 
@@ -38,7 +42,7 @@ namespace InventorySystem
 
         public void OnDrag(PointerEventData eventData)
         {
-            rectTransform.position = Input.mousePosition;
+            rectTransform.position = eventData.position;
         }
 
         public void OnEndDrag(PointerEventData eventData)
@@ -46,12 +50,11 @@ namespace InventorySystem
             draggableCanvasGroup.alpha = 1f;
             draggableCanvasGroup.blocksRaycasts = true;
 
-            /*
-            if (!droppedOnSlot)
+            
+            if (!droppedOnSlot && sourceSlot != null)
             {
-                inventory.DropItems(sourceSlot.index);
+                sourceSlot.gui.HandleDrop(null, this, eventData);
             }
-            */
 
             transform.SetParent(originalParent);
             rectTransform.anchoredPosition = Vector2.zero;
@@ -59,11 +62,9 @@ namespace InventorySystem
         }
 
         
-        public void DroppedOnSlot(GUI_Slot targetSlot)
+        public void MarkDroppedOnSlot()
         {
             droppedOnSlot = true;
-            Inventory.InterInventoryMove(inventory, targetSlot.inventory, sourceSlot.index, targetSlot.index);
-        }/*
-        */
+        }
     }
 }

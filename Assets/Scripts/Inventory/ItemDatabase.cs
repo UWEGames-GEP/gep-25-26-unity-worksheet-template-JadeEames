@@ -1,4 +1,3 @@
-using InventorySystem;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -25,18 +24,28 @@ namespace InventorySystem
             foreach (ItemMetaData item in items)
             {
                 if (item == null) continue;
+
+                if (item.id <= 0)
+                {
+                    Debug.LogWarning("Item '{item.name}' has an invalid ID. IDs should be greater than 0.");
+                    continue;
+                }
+
+                if (lookup.ContainsKey(item.id))
+                {
+                    Debug.LogWarning("Duplicate item ID found: {item.id}. Overwriting previous entry.");
+                }
+
                 lookup[item.id] = item;
             }
         }
 
         public ItemMetaData Get(int id)
         {
-            if (lookup.TryGetValue(id, out var item))
-            {
-                return item;
-            }
+            if (id <= 0) return null;
+            if (lookup == null) BuildLookup();
 
-            return null;
+            return lookup.TryGetValue(id, out ItemMetaData item) ? item : null;
         }
     }
 }

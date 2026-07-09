@@ -1,7 +1,5 @@
 using InventorySystem;
 using TMPro;
-using Unity.VisualScripting;
-using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -26,15 +24,16 @@ public class GUI_Slot : MonoBehaviour, IDropHandler
     public void Refresh(ItemDatabase database)
     {
         var stack = inventory.slots[index];
+        var item = database.Get(stack.item_id);
 
-        if (stack.IsEmpty)
+        if (stack.IsEmpty || item == null)
         {
             icon.enabled = false;
+            icon.sprite = null;
             countText.text = string.Empty;
             return;
         }
 
-        var item = database.Get(stack.item_id);
 
         icon.enabled = true;
         icon.sprite = item.icon;
@@ -43,8 +42,11 @@ public class GUI_Slot : MonoBehaviour, IDropHandler
 
     public void OnDrop(PointerEventData eventData)
     {
-        var dropped = eventData.pointerDrag?.GetComponent<DraggableItem>();
+        var dragged = eventData.pointerDrag?.GetComponent<DraggableItem>();
 
-        if (dropped != null) gui.OnSlotDropped(this, dropped);
+        if (dragged == null) return;
+
+        gui.HandleDrop(this, dragged, eventData);
+        dragged.MarkDroppedOnSlot();
     }
 }

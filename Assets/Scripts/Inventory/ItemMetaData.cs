@@ -10,7 +10,7 @@ namespace InventorySystem
         public int id = 0;
         public string displayName = "item";
         public string description = "description";
-        public List<Category> categories;
+        public List<Category> categories = new();
         public float weight = 1f;
         public GameObject objPrefab;
         public Sprite icon;

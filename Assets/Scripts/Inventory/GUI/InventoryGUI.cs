@@ -1,14 +1,6 @@
-using NUnit.Framework;
-using System.Collections;
 using System.Collections.Generic;
-using System.Net;
-using TMPro;
-using Unity.Collections.LowLevel.Unsafe;
-using UnityEditor.Build.Content;
-using UnityEditor.Rendering.Universal;
 using UnityEngine;
 using UnityEngine.EventSystems;
-using UnityEngine.UI;
 
 namespace InventorySystem
 {
@@ -31,14 +23,27 @@ namespace InventorySystem
             primary_inventory = primary;
             secondary_inventory = secondary;
 
+            if (primary_inventory != null)
+            {
+                Build(ref primary_inventory, primary_inventory_panel, ref primary_slots);
+                primary_inventory_panel.gameObject.SetActive(true);
+            }
+            else
+            {
+                Clear(primary_inventory_panel, ref primary_slots);
+                primary_inventory_panel.gameObject.SetActive(false);
 
-            Build(ref primary_inventory, primary_inventory_panel, ref primary_slots);
-            primary_inventory_panel.gameObject.SetActive(true);
+            }
 
             if (secondary_inventory != null)
             {
                 Build(ref secondary_inventory, secondary_inventory_panel, ref secondary_slots);
                 secondary_inventory_panel.gameObject.SetActive(true);
+            }
+            else
+            {
+                Clear(secondary_inventory_panel, ref secondary_slots);
+                secondary_inventory_panel.gameObject.SetActive(false);
             }
 
             Refresh();
@@ -49,6 +54,8 @@ namespace InventorySystem
         {
             primary_inventory = null;
             secondary_inventory = null;
+
+            Clear();
 
             primary_inventory_panel.gameObject.SetActive(false);
             secondary_inventory_panel.gameObject.SetActive(false);
@@ -65,14 +72,16 @@ namespace InventorySystem
                 Cursor.lockState = CursorLockMode.Locked;
 
                 Hide();
+                return;
             }
-            else if (primary != null)
-            {
-                Cursor.visible = true;
-                Cursor.lockState = CursorLockMode.Confined;
 
-                Show(primary, secondary);
-            }
+            if (primary == null) return;
+
+            Cursor.visible = true;
+            Cursor.lockState = CursorLockMode.Confined;
+
+            Show(primary, secondary);
+
         }
 
         public void Toggle(ToggleInventory eventData)
@@ -86,11 +95,36 @@ namespace InventorySystem
             Clear(secondary_inventory_panel.transform, ref secondary_slots);
         }
 
-        private void Clear(Transform inventoryPanelTransform, ref List<GUI_Slot> slots)
+        private void Clear(Transform inventoryPanel, ref List<GUI_Slot> slots)
         {
-            foreach (Transform slot in inventoryPanelTransform.transform) { Destroy(slot.gameObject); }
+            if (inventoryPanel == null) return;
+
+            for (int i = inventoryPanel.childCount - 1; i >= 0; i--)
+            {
+                Destroy(inventoryPanel.GetChild(i).gameObject);
+            }
 
             slots.Clear();
+        }
+
+        private void Build(ref Inventory inventory, Transform inventoryPanel, ref List<GUI_Slot> slots)
+        {
+            Clear(inventoryPanel, ref slots);
+
+            for (int i = 0; i < inventory.size; i++)
+            {
+                GameObject slot_object = Instantiate(inventory_slot_prefab, inventoryPanel);
+                GUI_Slot gui_slot = slot_object.GetComponent<GUI_Slot>();
+
+                if (gui_slot == null)
+                {
+                    Debug.LogError("Inventory slot prefab is missing a GUI_Slot component.");
+                    continue;
+                }
+
+                gui_slot.Bind(this, inventory, i);
+                slots.Add(gui_slot);
+            }
         }
 
         private void Build()
@@ -105,20 +139,6 @@ namespace InventorySystem
             }
         }
 
-        private void Build(ref Inventory inventory, Transform inventoryPanel, ref List<GUI_Slot> slots)
-        {
-            Clear(inventoryPanel, ref slots);
-
-            for (int i = 0; i < inventory.size; i++)
-            {
-                var slot_object = Instantiate(inventory_slot_prefab, inventoryPanel.transform);
-                var gui_slot = slot_object.GetComponent<GUI_Slot>();
-                gui_slot.Bind(this, inventory, i);
-
-                slots.Add(gui_slot);
-            }
-        }
-
         private void Refresh()
         {
             if (primary_inventory != null) { Refresh(ref primary_inventory, ref primary_slots); }
@@ -127,6 +147,8 @@ namespace InventorySystem
 
         private void Refresh(ref Inventory inventory, ref List<GUI_Slot> slots)
         {
+            if (inventory == null) return;
+
             for (int i = 0; i < inventory.size; ++i)
             {
                 slots[i].Refresh(inventory.database);
@@ -139,52 +161,49 @@ namespace InventorySystem
             else if (eventData.inventory == secondary_inventory) Refresh(ref secondary_inventory, ref secondary_slots);
         }
 
-        public void OnSlotDropped(GUI_Slot target_slot, DraggableItem dragged)
-        {
-            GUI_Slot source_slot = dragged.sourceSlot;
-
-            if (source_slot.inventory == target_slot.inventory)
-            {
-                source_slot.inventory.IntraInventoryMove(source_slot.index, target_slot.index);
-            }
-            else
-            {
-                Inventory.InterInventoryMove(source_slot.inventory, target_slot.inventory, source_slot.index, target_slot.index);
-            }
-
-            Refresh();
-        }
 
         public void HandleDrop(GUI_Slot target_slot, DraggableItem dragged, PointerEventData event_data)
         {
+            if (dragged == null || dragged.sourceSlot == null) return;
+
             GUI_Slot source_slot = dragged.sourceSlot;
             if (source_slot == target_slot) return;
 
             Inventory source_inventory = source_slot.inventory;
-            Inventory destination_inventory = target_slot != null ? target_slot.inventory : null;
-
             ItemStack source_stack = source_inventory.slots[source_slot.index];
+            if (source_stack.IsEmpty) return;
 
             // Handle drop if it is outside of inventory UI space. 
             if (DroppedOutSideInventory(event_data.position))
             {
-                if (!source_stack.IsEmpty)
-                {
-                    source_inventory.DropItems(source_slot.index, source_stack.count);
-                }
+                source_inventory.DropItems(source_slot.index, source_stack.count);
+                Refresh();
 
                 return;
             }
-            // Handle intra-inventory drop. 
+
+            // Handle intra-inventory drop, but not on slot. 
+            if (target_slot == null)
+            {
+                Refresh();
+                return;
+            }
+
+            Inventory destination_inventory = target_slot.inventory;
+            if (destination_inventory == null) return;
+
             if (source_inventory == destination_inventory)
             {
+                // Intra-inventory move.
                 source_inventory.IntraInventoryMove(source_slot.index, target_slot.index);
             }
-            else if (destination_inventory != null) // Handle drop on slot within a different inventory.
+            else
             {
+                // Inter-inventory move.
                 Inventory.InterInventoryMove(source_inventory, destination_inventory, source_slot.index, target_slot.index);
-
             }
+
+            Refresh();
         }
 
         private bool DroppedOutSideInventory(Vector2 dropScreenLocation)
@@ -192,25 +211,16 @@ namespace InventorySystem
             bool dropOverPrimary = false;
             bool dropOverSecondary = false;
 
-            if (primary_inventory != null)
+            if (primary_inventory != null && primary_inventory_panel != null)
             {
                 dropOverPrimary = RectTransformUtility.RectangleContainsScreenPoint(primary_inventory_panel.GetComponent<RectTransform>(), dropScreenLocation);
             }
-            if (secondary_inventory != null)
+            if (secondary_inventory != null && secondary_inventory_panel != null)
             {
-                dropOverSecondary = RectTransformUtility.RectangleContainsScreenPoint(secondary_inventory.GetComponent<RectTransform>(), dropScreenLocation);
+                dropOverSecondary = RectTransformUtility.RectangleContainsScreenPoint(secondary_inventory_panel.GetComponent<RectTransform>(), dropScreenLocation);
             }
 
             return !(dropOverPrimary || dropOverSecondary);
         }
     }
 }
-
-
-/*
- * TODO 
- * dragabble GUI stacks.
- * Sort inventory based on categories & item ID.
- * Have filter options.
- * Have tool bar with equipable items. 
- */

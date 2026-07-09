@@ -1,16 +1,5 @@
-using JetBrains.Annotations;
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using System.Security.Cryptography;
-using Unity.VisualScripting;
-using UnityEditor.Experimental.GraphView;
 using UnityEngine;
-using UnityEngine.tvOS;
-using static UnityEditor.Progress;
-using static UnityEngine.Rendering.VolumeComponent;
-
 
 namespace InventorySystem
 {
@@ -49,7 +38,6 @@ namespace InventorySystem
         {
             // Cannot add invalid item id or 0 items. 
             if (item_id <= 0 || amount <= 0) return 0;
-
             var item = database.Get(item_id);
             if (item == null) return 0;
 
@@ -58,15 +46,21 @@ namespace InventorySystem
             // Fill existing stacks
             for (int i = 0; i < slots.Length && amount > 0; i++)
             {
+                var stack = slots[i];
+
+                if (stack.IsEmpty) continue;
+
                 // If slot is not of the same type - skip.
-                if (slots[i].item_id != item_id) continue;
+                if (stack.item_id != item_id) continue;
 
                 // Calculate how many will fit in indexed slot. 
-                int available_space = item.stackLimit - slots[i].count;
+                int available_space = item.stackLimit - stack.count;
+                if (available_space <= 0) continue;
+
                 int to_add = Math.Min(available_space, amount);
 
                 // Apply add. 
-                slots[i].count += to_add;
+                stack.count += to_add;
                 amount -= to_add;
                 added += to_add;
             }
@@ -74,8 +68,10 @@ namespace InventorySystem
             // Fill empty slots
             for (int i = 0; i < slots.Length && amount > 0; i++)
             {
+                var stack = slots[i];
+
                 // If slot is not empty - skip.
-                if (!slots[i].IsEmpty) continue;
+                if (!stack.IsEmpty) continue;
 
                 int to_place = Math.Min(item.stackLimit, amount);
 
@@ -98,6 +94,10 @@ namespace InventorySystem
         /// <returns>Returns SUCCESSFUL additions.</returns>
         public int AddItems(int item_id, int index, int amount)
         {
+            if (!ValidIndex(index)) return 0;
+
+            if (item_id <= 0 || amount <= 0) return 0;
+
             var item = database.Get(item_id);
             if (item = null) return 0;
 
@@ -118,6 +118,9 @@ namespace InventorySystem
             {
                 // Calculate how many will fit in indexed slot. 
                 int available_space = item.stackLimit - target_slot.count;
+
+                if (available_space <= 0) return 0;
+
                 int to_add = Math.Min(available_space, amount);
 
                 // Apply add. 
@@ -138,20 +141,34 @@ namespace InventorySystem
         /// <returns></returns>
         public void AddItems(ref Inventory inventory_to_take_from)
         {
-            foreach (var slot in inventory_to_take_from.slots)
+            if (inventory_to_take_from == null) return;
+
+            for (int i = 0; i < inventory_to_take_from.slots.Length; i++)
             {
-                inventory_to_take_from.RemoveItemsByID(slot.item_id, AddItems(slot.item_id, slot.count));
+                ItemStack source_stack = inventory_to_take_from.slots[i];
+
+                if (source_stack.IsEmpty) continue;
+
+                int added = AddItems(source_stack.item_id, source_stack.count);
+
+                if (added > 0)
+                {
+                    inventory_to_take_from.RemoveItemsByIndex(i, added);
+                }
             }
         }
 
         public void IntraInventoryMove(int source_index, int destination_index)
         {
-            if (!ValidIndex(source_index) || !ValidIndex(destination_index) || source_index == destination_index) return;
+            if (!ValidIndex(source_index) || !ValidIndex(destination_index)) return;
+            if (source_index == destination_index) return;
 
             ItemStack source_stack = slots[source_index];
             ItemStack destination_stack = slots[destination_index];
 
             if (source_stack.IsEmpty) return; // nothing to move.
+
+            bool changed = false;
 
             // Move into empty slot
             if (destination_stack.IsEmpty)
@@ -163,8 +180,11 @@ namespace InventorySystem
             else if (source_stack.item_id == destination_stack.item_id)
             {
                 var item = database.Get(source_stack.item_id);
+                if (item != null) return;
 
                 int available_space = item.stackLimit - destination_stack.count;
+                if (available_space > 0) return;
+
                 int to_transfer = Math.Min(available_space, source_stack.count);
 
                 destination_stack.count += to_transfer;
@@ -175,15 +195,21 @@ namespace InventorySystem
                 slots[destination_index] = destination_stack;
                 slots[source_index] = source_stack;
 
+                changed = to_transfer > 0;
+
             }
             // Swap different types
             else
             {
                 slots[destination_index] = source_stack;
                 slots[source_index] = destination_stack;
+                changed = true;
             }
 
-            EventManager.Raise(new InventoryUpdated { inventory = this });
+            if (changed)
+            {
+                EventManager.Raise(new InventoryUpdated { inventory = this });
+            }
         }
 
 
@@ -195,8 +221,15 @@ namespace InventorySystem
             // If either index is invalid - skip.
             if (!source_inventory.ValidIndex(source_index) || !destination_inventory.ValidIndex(destination_index)) return;
 
+            if (source_inventory == destination_inventory)
+            {
+                source_inventory.IntraInventoryMove(source_index, destination_index);
+            }
+
             ItemStack source_stack = source_inventory.slots[source_index];
             ItemStack destination_stack = destination_inventory.slots[destination_index];
+
+            bool changed = false;
 
             // If item to be moved is null - skip.
             if (source_stack.IsEmpty) return;
@@ -206,13 +239,18 @@ namespace InventorySystem
             {
                 destination_inventory.slots[destination_index] = source_stack;
                 source_inventory.slots[source_index] = ItemStack.Empty;
+                changed = true;
             }
             // 2. Merge same types
             else if (source_stack.item_id == destination_stack.item_id)
             {
-                var item = source_inventory.database.Get(source_index);
+                var item = source_inventory.database.Get(source_stack.item_id);
+
+                if (item == null) return;
 
                 int available_space = item.stackLimit - destination_stack.count;
+                if (available_space > 0) return;
+
                 int to_transfer = Math.Min(available_space, source_stack.count);
 
                 destination_stack.count += to_transfer;
@@ -225,13 +263,18 @@ namespace InventorySystem
 
                 destination_inventory.slots[destination_index] = destination_stack;
                 source_inventory.slots[source_index] = source_stack;
+
+                changed = true;
             }
             // 3. Swap different types
             else
             {
                 source_inventory.slots[source_index] = destination_stack;
                 destination_inventory.slots[destination_index] = source_stack;
+                changed = true;
             }
+
+            if (!changed) return;
 
             EventManager.Raise(new InventoryUpdated { inventory = source_inventory });
             EventManager.Raise(new InventoryUpdated { inventory = destination_inventory });
@@ -241,9 +284,9 @@ namespace InventorySystem
         public bool CanPickupItem(int item_id)
         {
             var item = database.Get(item_id);
-            if (item = null) return false;
+            if (item == null) return false;
 
-            for (int i = 0; i < slots.Length; ++i)
+            for (int i = 0; i < slots.Length; i++)
             {
                 var stack = slots[i];
 
@@ -289,46 +332,63 @@ namespace InventorySystem
         public int RemoveItemsByIndex(int index, int amount)
         {
             if (!ValidIndex(index) || amount <= 0) return 0;
-            int removed = 0;
-
 
             ItemStack stack = slots[index];
-            if (stack.IsEmpty) return removed;
+            if (stack.IsEmpty) return 0;
 
-            int to_remove = Math.Min(stack.count, amount);
-            stack.count -= to_remove;
-            removed += to_remove;
+            int removed = Math.Min(stack.count, amount);
+            stack.count -= removed;
 
             if (stack.IsEmpty) slots[index] = ItemStack.Empty;
 
-            if (removed > 0) EventManager.Raise(new InventoryUpdated { inventory = this });
+            if (removed > 0)
+            {
+                EventManager.Raise(new InventoryUpdated { inventory = this });
+            }
+
             return removed;
         }
 
         public void DropItems()
         {
+            bool any_dropped = false;
+
             for (int i = 0; slots.Length > i; i++)
             {
-                var stack = slots[i];
+                ItemStack stack = slots[i];
                 if (stack.IsEmpty) continue;
 
                 SpawnInWorld(stack.item_id, stack.count);
                 slots[i] = ItemStack.Empty;
+                any_dropped = true;
             }
 
-            EventManager.Raise(new InventoryUpdated { inventory = this });
+            if (any_dropped)
+            {
+                EventManager.Raise(new InventoryUpdated { inventory = this });
+            }
         }
 
+        /// <summary>
+        /// Drops specific count of items from specific index. If count is unspecified, drops entire stack.
+        /// </summary>
+        /// <param name="index"></param>
+        /// <param name="count"></param>
+        /// <returns></returns>
         public int DropItems(int index, int count = 0)
         {
             // if index or item is invalid - skip. 
             if (!ValidIndex(index)) return 0;
+
             ItemStack stack = slots[index];
             if (stack.IsEmpty) return 0;
-            if (count == 0) count = stack.count;
 
+            // if not specified, drop entire stack.
+            if (count <= 0) count = stack.count;
 
             int dropped = Math.Min(stack.count, count);
+            if (dropped <= 0) return 0;
+
             stack.count -= dropped;
 
             SpawnInWorld(stack.item_id, dropped);
@@ -341,14 +401,24 @@ namespace InventorySystem
         
         private void SpawnInWorld(int item_id, int count)
         {
-            var item_data = database.Get(item_id);
+            ItemMetaData item_data = database.Get(item_id);
+
             if (baseItemPrefab == null || item_data == null || item_data.objPrefab == null) return;
 
             Vector3 pos = transform.TransformPoint(droppedItemPosOffset);
-            var baseObj = Instantiate(baseItemPrefab, pos, Quaternion.identity);
+
+            GameObject baseObj = Instantiate(baseItemPrefab, pos, Quaternion.identity);
             Instantiate(item_data.objPrefab, pos, Quaternion.identity, baseObj.transform);
-            baseObj.GetComponent<ItemObject>().SetItem(item_data, count);
-            /**/
+
+            ItemObject item_object = baseObj.GetComponent<ItemObject>();
+
+            if (item_object == null)
+            {
+                Debug.LogError("Error - Base item prefab is missing an ItemObject Component");
+                return;
+            }
+
+            item_object.SetItem(item_data, count);
         }
         
     }
